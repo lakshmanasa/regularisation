@@ -1,0 +1,8 @@
+%dw 2.0
+
+type auto_0f13fe32_8310_4e0d_8ae8_cebce734b450_Output_Payload = {|
+  absenties: Null, 
+  forgotToCheckout: Null, 
+  lessThan9Hours: Null
+|}
+

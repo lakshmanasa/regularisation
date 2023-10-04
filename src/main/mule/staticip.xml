@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c7d47b3d-8a12-44b9-91e8-1a8906e3c587" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<api-gateway:autodiscovery apiId="17992736" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="da0a3aa8-8052-4f6c-a64d-3600746f5df5" flowRef="staticipFlow" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="8a786c16-727e-451c-914e-35d78bb31436" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="123456" database="jms" />
+	</db:config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="4302dbee-4f67-4611-a66c-81953ec851ef" >
+		<salesforce:basic-connection username="eniquehrms@gmail.com" password="project12345" securityToken="GMYEOujKCRXDkEzcv8dHpwAE" />
+	</salesforce:sfdc-config>
+	<jms:config name="JMS_Config" doc:name="JMS Config" doc:id="ee9b778c-a7c4-4f4d-8eb1-eaa91ea59b54" >
+		<jms:active-mq-connection username="admin" password="admin" >
+			<jms:factory-configuration brokerUrl="tcp://localhost:61616" />
+		</jms:active-mq-connection>
+	</jms:config>
+	<flow name="staticipFlow" doc:id="6cba8514-e4a9-4c21-8c64-6d5ae7037b67" >
+		<http:listener doc:name="Listener" doc:id="a043582a-cd75-4f59-b370-c0b7a1eb0445" config-ref="HTTP_Listener_config" path="/static"/>
+		<ee:transform doc:name="Transform Message" doc:id="4022660c-2d68-485b-aa4a-a3920f21b9bf" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+" hi " ++ attributes.queryParams.name as String]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="staticipFlow1" doc:id="6798d073-8e68-4315-b557-0e5ea8823daa" >
+		<http:listener doc:name="Listener" doc:id="791e9611-1af9-44a0-b2a1-aef3eb56b0c4" config-ref="HTTP_Listener_config" path="/db">
+		</http:listener>
+		<db:select doc:name="Select" doc:id="6f5d7ab7-4f1d-4597-bc53-e3e7290c9a1e" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from jms]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="a6f18502-6ac7-4f2e-b91e-2dbefcf4d551" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="staticipFlow2" doc:id="5d8219e0-5399-409e-af32-d4d88924d9c1" >
+		<http:listener doc:name="Listener" doc:id="a8a18a9d-d448-4e61-aef7-7b07be06fe4f" config-ref="HTTP_Listener_config" path="/asa1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="fd6a8fe3-d1c2-47d9-9d7c-0fd4f11faf38" />
+		<async doc:name="Async" doc:id="88e841be-205c-4310-b73a-875213822bf2" >
+			<flow-ref doc:name="Flow Reference" doc:id="026e0ce1-8027-4bcb-9fed-195c1a0f61db" name="staticipFlow1"/>
+		</async>
+		<ee:transform doc:name="Transform Message" doc:id="cbf46c30-6604-4618-bea4-49af85d1b0ae" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"lakshman"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="staticipFlow3" doc:id="305cd159-81d9-4135-add5-647dff7b98bb" >
+		<http:listener doc:name="Listener" doc:id="a6222a4d-37f1-4903-9cbe-de0ea4741c00" config-ref="HTTP_Listener_config" path="/sf"/>
+		<ee:transform doc:name="Transform Message" doc:id="99884747-3c84-4488-a7b1-6f7fa3836c82" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if(attributes.queryParams.id != null)
+{
+	"query": "SELECT checkInTime__c,checkOutTime__c,date__c,employeeId__c,Id,id__c,Name,totalHoursLogged__c FROM attendance__c WHERE employeeId__c = '" ++ attributes.queryParams.id ++ "'"
+}
+else
+{ 
+	"query": "SELECT checkInTime__c,checkOutTime__c,date__c,employeeId__c,Id,id__c,Name,totalHoursLogged__c FROM attendance__c"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="4907f8c0-bb05-4259-9404-57afe0dfea6d" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="4c1d7c67-ce5f-4553-aef3-ebef3e58468a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="attendance" doc:id="c08a3e76-5271-4dae-a1a4-01096e2a9ec2" >
+		<http:listener doc:name="Listener" doc:id="5b3324aa-e398-4b63-9a5b-5858e6d251ac" config-ref="HTTP_Listener_config" path="/upsert"/>
+		<ee:transform doc:name="Transform Message" doc:id="92aea9f4-79d3-415d-8cdd-2b042cc15c63" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map{
+	checkInTime__c: $.checkInTime__c default "null",
+	checkOutTime__c: $.checkOutTime__c default "null",
+	date__c: (now()>> "IST") as String {format: "dd-MMMM-yyyy"},
+	employeeId__c: $.employeeId__c,
+	Name: $.Name,
+	totalHoursLogged__c: $.totalHoursLogged__c default "null"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create type="attendance__c" doc:name="Create" doc:id="dc6e9386-b57b-4a08-93a7-3c7ba852df55" config-ref="Salesforce_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="47ada811-bbe3-4588-ad24-0bea70028ac1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="optional" doc:id="cc5ab29e-500b-42ee-b947-b811fa2a74aa" >
+		<http:listener doc:name="Listener" doc:id="3e5a0845-1a0f-42f7-bd4d-91cccba2d392" config-ref="HTTP_Listener_config" path="/option"/>
+		<ee:transform doc:name="Transform Message" doc:id="205316a6-90c0-4e12-895c-ffc527976499" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (i,e) -> 
+{
+	
+
+	Name: i.Name,
+	Christmas_Eve__c: i.Christmas_Eve,
+	Eid__c: i.Eid,
+	Lohri__c: i.Lohri,
+	New_years_Eve__c:i.New_years_Eve,
+	Ramnavmi__c: i.Ramnavmi,
+	id__c: i.id
+		
+} ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create" doc:id="74796f69-b68d-4954-8c18-a871e5a572fd" config-ref="Salesforce_Config" type="optionalHoliday__c"/>
+		<ee:transform doc:name="Transform Message" doc:id="abd22c20-7a22-4e34-a716-7cc51a121a54" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="leave" doc:id="0d46471f-2e1c-4287-b1fd-8064a3debe36" >
+		<http:listener doc:name="Listener" doc:id="306eb61f-415a-4c11-b3b1-4f0ba4099282" config-ref="HTTP_Listener_config" path="/leave"/>
+		<ee:transform doc:name="Transform Message" doc:id="2db8fb9f-87a7-4e12-a79a-f781f6efb641" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+	employeeId__c: $.employeeId,
+	leaveAvailable__c: $.leaveAvailable,
+	leaveBooked__c: $.leaveBooked,
+	leaveid__c: $.leaveid,
+	leaveType__c: $.leaveType,
+	Name: $.employeeName,
+	totalLeaves__c: $.totalLeaves
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create type="newLeave__c" doc:name="Create" doc:id="66fc5a93-e9b8-4d15-a305-149e0560c679" config-ref="Salesforce_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="71449dc9-c13b-4813-9ab0-dfdce5ba68dd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="withOutOptional" doc:id="0f13fe32-8310-4e0d-8ae8-cebce734b450" >
+		<http:listener doc:name="Listener" doc:id="d5ede4ef-5cfb-4d23-afaa-d9d76d6f2c69" config-ref="HTTP_Listener_config" path="/withOutOptional"/>
+		<ee:transform doc:name="Transform Message" doc:id="728aa548-22a0-43b1-89d1-b1002bd2b655" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"query": "SELECT checkInTime__c,checkOutTime__c,date__c,employeeId__c,Id,id__c,Name,totalHoursLogged__c FROM attendance__c where date__c ='" ++ ((now() >> "IST")-|P1D|) as String {format: "dd-MMMM-yyyy"} ++ "'"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="2ae0bdb0-4695-407c-b58e-f535e284c2cb" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="f4253371-25b3-4088-bbd2-795fba737f90" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="54c23e87-340a-4da3-aa1e-d247c110357d" >
+			<set-variable value="#[payload]" doc:name="Set Variable" doc:id="5b9b1d4e-7865-41c7-988a-2b23dd8d9374" variableName="actual"/>
+			<choice doc:name="Choice" doc:id="5332cc0f-0215-42a5-a110-0cb51c89b205" >
+				<when expression='#[payload.checkInTime__c == "null"]'>
+					<ee:transform doc:name="Transform Message" doc:id="e91d5f33-be8f-4403-a50a-16b0c49cfa58" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "send an absent mail " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<set-variable value="#[(vars.absenties default []) + payload.message]" doc:name="Set Variable" doc:id="28f322d6-3dc1-4d99-ac08-eedfed14731c" variableName="absenties"/>
+				</when>
+				<when expression='#[(payload.checkInTime__c != "null") and (payload.checkOutTime__c == "null")]'>
+					<ee:transform doc:name="Transform Message" doc:id="e5778875-3348-4d06-ae42-aee71f6f7f15" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "send an email is forgot to checkout " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<set-variable value="#[(vars.forgot default []) + payload.message]" doc:name="Set Variable" doc:id="83b46f77-0aa4-4fb3-bb5a-f35cacb00121" variableName="forgot"/>
+				</when>
+				<when expression='#[(payload.checkInTime__c != "null") and (payload.checkOutTime__c != "null")]'>
+					<ee:transform doc:name="Transform Message" doc:id="250cd9c0-9b04-47a8-885a-06723ec7f4d2" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[payload]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="totalHours" ><![CDATA[%dw 2.0
+output application/json
+var a = payload.checkInTime__c
+var b = payload.checkOutTime__c
+var c = abs(a.hour-b.hour)
+var d = abs(a.minutes-b.minutes)
+var e = abs(a.seconds-b.seconds)
+var h = if(c <= 9)
+{
+    "hours": "0" ++ c
+}
+else
+{
+ "hours": c
+}
+var m = if(d <= 9)
+{
+    "minutes": "0" ++ d
+}
+else
+{
+ "minutes": d
+}
+var s = if(e <= 9)
+{
+    "seconds": "0" ++ e
+}
+else
+{
+ "seconds": e
+}
+---
+h.hours ++ ":" ++ m.minutes ++ ":" ++ s.seconds]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+					<ee:transform doc:name="Transform Message" doc:id="e69cd017-be0a-468e-9157-7a8f92a95a44" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+	checkInTime__c: vars.actual.checkInTime__c,
+	checkOutTime__c: vars.actual.checkOutTime__c,
+	date__c: vars.actual.date__c,
+	employeeId__c: vars.actual.employeeId__c,
+	Name: vars.actual.Name,
+	totalHoursLogged__c: vars.totalHours,
+	Id: vars.actual.Id
+}]]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<set-variable value="#[payload reduce($)]" doc:name="Set Variable" doc:id="44afeb6b-aecb-4394-a7ac-e3ab5b08c233" variableName="beforeUpdate"/>
+					<choice doc:name="Choice" doc:id="e5090c51-cb22-42f9-b5c8-47d404385f54" >
+						<when expression='#[vars.beforeUpdate.totalHoursLogged__c &lt; "09:00:00"]'>
+							<ee:transform doc:name="Transform Message" doc:id="5de3ca4d-e60d-4c2a-b953-b8ba335eae4e" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "send absent mail because of " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String ++ " have logged out before 9 hours"
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<set-variable value="#[(vars.lessthan9 default []) + payload.message]" doc:name="Set Variable" doc:id="c26320d1-a36d-4b28-9ac6-878261a87f73" variableName="lessThan9"/>
+						</when>
+						<otherwise>
+							<salesforce:upsert objectType="attendance__c" externalIdFieldName="Id" doc:name="Upsert" doc:id="0aa63945-b5ae-4697-b5b5-ebc2d09e00fb" config-ref="Salesforce_Config" />
+							<ee:transform doc:name="Transform Message" doc:id="996eb308-9e32-4312-9f37-925f26063967">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+							<ee:transform doc:name="Transform Message" doc:id="4386bf6c-dd85-42dc-ad15-3ea8865d64d9">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+"This employee is working " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<set-variable value="#[(vars.working default []) + payload]" doc:name="Set Variable" doc:id="531e03ce-b479-46d3-b690-c116189e8727" variableName="working"/>
+						</otherwise>
+					</choice>
+				</when>
+				<otherwise >
+					<ee:transform doc:name="Transform Message" doc:id="359a461a-96e4-4dfb-9b1a-e703e75d76a5" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</otherwise>
+			</choice>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="fdfb6313-ab9e-4055-a61e-4cbbd8b9452e">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"absenties": vars.absenties,
+	"forgotToCheckout": vars.forgot,
+	"lessThan9Hours": vars.lessThan9,
+	"working": vars.working
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		<jms:publish doc:name="Publish" doc:id="e03cc3b7-fc96-46a7-bbe1-4120b4c56ee5" config-ref="JMS_Config" destination='#["no-optional-" ++ (now() &gt;&gt; "IST") as String {format: "dd-MMMM-yyyy-HH-mm-ss"}]'>
+			<jms:message outboundContentType="application/json" />
+		</jms:publish>
+	</flow>
+	<flow name="optionall" doc:id="f7701910-69f8-473d-be05-02184031c652" >
+		<http:listener doc:name="Listener" doc:id="461b78e3-955c-4d7b-aa54-42a4442f33d9" config-ref="HTTP_Listener_config" path="/optional"/>
+		<ee:transform doc:name="Transform Message" doc:id="29611cba-ce69-44bb-9e1a-0f6ce27e1839" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"query": "SELECT Christmas_Eve__c,Eid__c,Lohri__c,New_years_Eve__c,Ramnavmi__c,Name,id__c FROM optionalHoliday__c where id__c='" ++ now().year ++ "'"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="f2db88de-6e53-4110-85c0-fc13a1ccb0f6" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="a9e64772-e8f4-4cfa-ae82-90c76e2d41a5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload reduce($)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="f662d8fc-a800-4f35-9ae9-432450bacb1e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var a = valuesOf(payload)
+---
+(a contains ((now() >> "IST")-|P1D|) as String {format: "dd-MMMM-yyyy"}) as String]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="abedea4c-56c0-4808-be34-09af7548027b" >
+			<when expression='#[payload == "true"]'>
+				<ee:transform doc:name="Transform Message" doc:id="4c1a3a70-216b-4279-8f77-cb422db2e7a4">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"query": "SELECT checkInTime__c,checkOutTime__c,date__c,employeeId__c,Id,id__c,Name,totalHoursLogged__c FROM attendance__c where date__c ='" ++ ((now() >> "IST")-|P1D|) as String {format: "dd-MMMM-yyyy"} ++ "'"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<salesforce:query doc:name="Query" doc:id="e10639aa-ee87-456a-96c1-b5997789daa9" config-ref="Salesforce_Config">
+					<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+				</salesforce:query>
+				<ee:transform doc:name="Transform Message" doc:id="6f8e3ffd-eaef-4b96-adfe-84c4b4342a84" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<foreach doc:name="For Each" doc:id="228bac6a-142a-442c-8f99-5cdea63df036" >
+					<set-variable value="#[payload]" doc:name="Set Variable" doc:id="c722b624-3b12-4424-956d-e9e9a840d388" variableName="actual"/>
+					<choice doc:name="Choice" doc:id="494724c1-fcb7-4201-80de-8a3f7c34b9f0" >
+						<when expression='#[payload.checkInTime__c == "null"]'>
+							<ee:transform doc:name="Transform Message" doc:id="1c63e7fb-c554-426d-93d5-40277bbaad96">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"query": "SELECT employeeId__c,Id,leaveAvailable__c,leaveBooked__c,leaveid__c,leaveType__c,Name,totalLeaves__c FROM newLeave__c where employeeId__c ='" ++ vars.actual.employeeId__c as String ++ "'"
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<salesforce:query doc:name="Query" doc:id="78ffe499-ccb4-467c-a01f-8102ebfd7f5b" config-ref="Salesforce_Config" >
+								<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+							</salesforce:query>
+							<ee:transform doc:name="Transform Message" doc:id="bf0d392c-2efa-4ba9-8d06-08426a831246" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload reduce($)]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<ee:transform doc:name="Transform Message" doc:id="f7a7944a-093e-47ea-896b-ffe40e08dded" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var a = 1
+---
+if(payload.leaveAvailable__c >= a)
+{
+	employeeId__c: payload.employeeId__c,
+	leaveAvailable__c: (payload.leaveAvailable__c - a) as String,
+	leaveBooked__c: (payload.leaveBooked__c + a) as String,
+	leaveid__c: payload.leaveid__c,
+	leaveType__c: payload.leaveType__c,
+	Name: payload.Name,
+	totalLeaves__c: payload.totalLeaves__c
+}
+else
+{
+	"message": "there is no sufficient leaves for u"
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<choice doc:name="Choice" doc:id="c6a12259-b66b-4897-b477-1fbe3c1279e5" >
+								<when expression='#[payload.message == "there is no sufficient leaves for u"]'>
+									<ee:transform doc:name="Transform Message" doc:id="2f4dd7e9-456c-41ae-b295-583f45752384" >
+										<ee:message >
+											<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": " there is no sufficient leaves for this " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String ++ " employeeId"  
+}]]></ee:set-payload>
+										</ee:message>
+									</ee:transform>
+									<set-variable value="#[(vars.insufficient default []) + payload.message]" doc:name="Set Variable" doc:id="1d8bd92b-2520-44ef-9d02-472d29748f2f" variableName="insufficient"/>
+								</when>
+								<otherwise >
+									<set-variable value="#[[payload]]" doc:name="Set Variable" doc:id="7d9b4195-4f0e-40d0-a97c-26c576240398" variableName="beforeUpdate"/>
+									<salesforce:upsert doc:name="Upsert" doc:id="0cad910c-f680-42d3-9618-6c1a9e91698a" config-ref="Salesforce_Config" objectType="newLeave__c" externalIdFieldName="leaveid__c">
+										<salesforce:records ><![CDATA[#[vars.beforeUpdate]]]></salesforce:records>
+									</salesforce:upsert>
+									<ee:transform doc:name="Transform Message" doc:id="993ffba8-271a-4edb-b4b1-f57ab85912ce" >
+										<ee:message >
+											<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+										</ee:message>
+									</ee:transform>
+									<ee:transform doc:name="Transform Message" doc:id="7645baf1-9550-40e0-bd2d-443e77b7d358">
+										<ee:message>
+											<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "This employee is eligible for availing optional holiday " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String
+}]]></ee:set-payload>
+										</ee:message>
+									</ee:transform>
+									<set-variable value="#[(vars.available default []) + payload.message]" doc:name="Set Variable" doc:id="8bfa9048-14fa-4083-ac1a-ca02d3f3ef84" variableName="available"/>
+								</otherwise>
+							</choice>
+						</when>
+						<when expression='#[(payload.checkInTime__c != "null") and payload.checkOutTime__c == "null"]'>
+							<ee:transform doc:name="Transform Message" doc:id="84114226-f342-4456-b390-69b8290da817" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "forgot to checkout " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<set-variable value="#[(vars.forgot default []) + payload.message]" doc:name="Set Variable" doc:id="c5238beb-9cc6-4cc2-a619-6585cae66a89" variableName="forgot"/>
+						</when>
+						<when expression='#[(payload.checkInTime__c != "null") and (payload.checkOutTime__c != "null")]'>
+							<ee:transform doc:name="Transform Message" doc:id="f75ac443-f40c-4443-addf-5edbf483c115" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+								</ee:message>
+								<ee:variables >
+									<ee:set-variable variableName="totalHours" ><![CDATA[%dw 2.0
+output application/json
+var a = payload.checkInTime__c
+var b = payload.checkOutTime__c
+var c = abs(a.hour-b.hour)
+var d = abs(a.minutes-b.minutes)
+var e = abs(a.seconds-b.seconds)
+var h = if(c <= 9)
+{
+    "hours": "0" ++ c
+}
+else
+{
+ "hours": c
+}
+var m = if(d <= 9)
+{
+    "minutes": "0" ++ d
+}
+else
+{
+ "minutes": d
+}
+var s = if(e <= 9)
+{
+    "seconds": "0" ++ e
+}
+else
+{
+ "seconds": e
+}
+---
+h.hours ++ ":" ++ m.minutes ++ ":" ++ s.seconds]]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+							<ee:transform doc:name="Transform Message" doc:id="2bae9f87-f107-424d-9f04-4954872dd5e4" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+	checkInTime__c: vars.actual.checkInTime__c,
+	checkOutTime__c: vars.actual.checkOutTime__c,
+	date__c: vars.actual.date__c,
+	employeeId__c: vars.actual.employeeId__c,
+	Name: vars.actual.Name,
+	totalHoursLogged__c: vars.totalHours,
+	Id: vars.actual.Id
+}]]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<set-variable value="#[payload reduce($)]" doc:name="Set Variable" doc:id="fcebc0b7-9dd6-45fa-9d98-ddc4c1921530" variableName="before"/>
+							<choice doc:name="Choice" doc:id="51f1d810-320b-4e00-a680-61433dc4cd2f" >
+								<when expression='#[vars.before.totalHoursLogged__c &lt; "09:00:00"]'>
+									<ee:transform doc:name="Transform Message" doc:id="b1ee3967-07b9-4e4e-9698-a342c8df2fcb" >
+										<ee:message >
+											<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "send absent mail because of " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String ++ " have logged out before 9 hours"
+}]]></ee:set-payload>
+										</ee:message>
+									</ee:transform>
+									<set-variable value="#[(vars.lessthan9 default []) + payload.message]" doc:name="Set Variable" doc:id="bb3214a1-3671-4eaa-b5d6-196559b2d5be" variableName="lessthan9"/>
+								</when>
+								<otherwise >
+									<salesforce:upsert doc:name="Upsert" doc:id="40122d8c-b354-4789-8538-e03ce319b41a" config-ref="Salesforce_Config" objectType="attendance__c" externalIdFieldName="Id" />
+									<ee:transform doc:name="Transform Message" doc:id="fa206d1d-da2f-468f-ba0e-5981286b2662">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+									<ee:transform doc:name="Transform Message" doc:id="f2c7ef1d-b2b4-4725-b94b-1bc8fb764211" >
+										<ee:message >
+											<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+"This employee is working on optional Holiday " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String
+]]></ee:set-payload>
+										</ee:message>
+									</ee:transform>
+									<set-variable value="#[(vars.working default []) + payload]" doc:name="Set Variable" doc:id="ef8e136b-68c9-4a15-bdf1-59535be19658" variableName="working"/>
+								</otherwise>
+							</choice>
+						</when>
+						<otherwise >
+							<ee:transform doc:name="Transform Message" doc:id="a623b729-1da0-45bb-861b-bbc5603b68dc" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</otherwise>
+					</choice>
+				</foreach>
+				<ee:transform doc:name="Transform Message" doc:id="7787eb4c-8a1f-47cc-8b8b-236998d03e6a">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"insufficient leaves forEmployee": vars.insufficient,
+	"leaves available forEmployee": vars.available,
+	"forgotToCheckout": vars.forgot,
+	"lessthan9": vars.lessthan9,
+	"working on optional holiday": vars.working
+	
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				<jms:publish doc:name="Publish" doc:id="820fd78d-97da-4757-ad63-89abe8908617" config-ref="JMS_Config" destination='#["Optional-" ++ (now() &gt;&gt; "IST") as String {format: "dd-MMMM-yyyy-HH-mm-ss"}]'>
+					<jms:message outboundContentType="application/json" />
+				</jms:publish>
+			</when>
+			<otherwise >
+				<flow-ref doc:name="Flow Reference" doc:id="59835603-4bfa-4b56-b59a-8845100f77fc" name="withOutOptional"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="Regularization" doc:id="52119c89-54ce-4593-a5b8-9155ccc6856e" >
+		<http:listener doc:name="Listener" doc:id="b079eaf8-fa9a-4c58-b326-2cbb10ae27c1" config-ref="HTTP_Listener_config" path="/regularization"/>
+		<ee:transform doc:name="Transform Message" doc:id="6a356952-a77c-434d-bfa6-08c0b9138135" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"query": "SELECT checkInTime__c,checkOutTime__c,totalHoursLogged__c,Name,date__c,employeeId__c,Id,id__c FROM attendance__c where checkOutTime__c = 'null' and checkInTime__c != 'null'"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="1f659539-9788-4b2f-b559-11203fce6998" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="45835b5f-5dc3-4a74-9312-910538879759" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="1dca3522-21df-44c0-ab3d-f7b2cae7ee6b" >
+			<set-variable value="#[payload]" doc:name="Set Variable" doc:id="652b28ad-19c3-45b2-86b5-0b7914d6993e" variableName="actual"/>
+			<ee:transform doc:name="Transform Message" doc:id="6881fc5b-4184-41c5-b5fc-028adf4a6167">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var a = payload.checkInTime__c 
+var b = a.hour + 9
+var c = a.minutes + 0
+var d = a.seconds + 0
+var h = if(b <= 9)
+{
+    "hours": "0" ++ b
+}
+else
+{"hours": b}
+var m = if(c <= 9)
+{
+    "minutes": "0" ++ c
+}
+else
+{"minutes": c}
+var s = if(d <= 9)
+{
+    "seconds": "0" ++ d
+}
+else
+{"seconds": d}
+var e = h.hours ++ ":" ++ m.minutes ++ ":" ++ s.seconds
+var x = abs(a.hour - e.hour)
+var y = abs(a.minutes - e.minutes)
+var z = abs(a.seconds - e.seconds)
+var p = if(x <= 9)
+{"hours": "0" ++ x}
+else
+{"hours": x}
+var q = if(y <= 9)
+{"minutes": "0" ++ y}
+else
+{"minutes": y}
+var r = if(z <= 9)
+{"seconds": "0" ++ z}
+else
+{"seconds": z}
+var o = p.hours ++ ":" ++ q.minutes ++ ":" ++ r.seconds
+---
+[{
+	checkInTime__c: vars.actual.checkInTime__c,
+	checkOutTime__c: e,
+	date__c: vars.actual.date__c,
+	employeeId__c: vars.actual.employeeId__c,
+	Name: vars.actual.Name,
+	totalHoursLogged__c: o,
+	Id: vars.actual.Id
+}]
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<set-variable value="#[payload reduce($)]" doc:name="Set Variable" doc:id="a2297bba-5d27-43b4-bf54-6f327c34322b" variableName="beforeUpdate"/>
+			<salesforce:upsert objectType="attendance__c" externalIdFieldName="Id" doc:name="Upsert" doc:id="f285b655-e589-4be7-8c96-25d7824585d2" config-ref="Salesforce_Config"/>
+			<ee:transform doc:name="Transform Message" doc:id="412c2913-1af4-4e17-be2d-02eae9386bc5" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<choice doc:name="Choice" doc:id="908f5147-3b48-46d5-9415-831d2734dad7" >
+				<when expression='#[vars.beforeUpdate.totalHoursLogged__c &lt; "09:00:00"]'>
+					<ee:transform doc:name="Transform Message" doc:id="0b5e2b28-ae1a-4527-8c30-dac2b095800c" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+ "message": "send valid checkout details for regulariztion, it should not be lessthan9 hours for this employeeId " ++ vars.actual.employeeId__c as String	
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<set-variable value="#[(vars.failure default []) + payload.message]" doc:name="Set Variable" doc:id="f4accdcd-e58f-4527-a13d-828687303db9" variableName="failure" />
+				</when>
+				<otherwise >
+					<ee:transform doc:name="Transform Message" doc:id="50d8a4ae-30b8-41f5-9235-9d0ec19db429" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "for this employee " ++ vars.actual.employeeId__c as String ++ " regularization is done"
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<set-variable value="#[(vars.success default []) + payload.message]" doc:name="Set Variable" doc:id="e8a831b6-3047-4be8-b5bc-046fe88a70a4" variableName="success"/>
+				</otherwise>
+			</choice>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="5be7de99-915f-44b4-8c2b-c69c4c930463" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"failure_regularization-forEmployee": vars.failure,
+	"success_regularization-forEmployee": vars.success
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<jms:publish doc:name="Publish" doc:id="11463d8c-8eac-4bbc-9b41-de4042316242" config-ref="JMS_Config" destination='#["regularization-" ++ vars.actual.date__c as String]'>
+			<jms:message outboundContentType="application/json" />
+		</jms:publish>
+	</flow>
+	<flow name="staticipFlow4" doc:id="8951d04c-a36a-49a9-9644-69e8ede200ce" >
+		<http:listener doc:name="Listener" doc:id="e127f240-4b1f-4415-bd84-f0ff2f4f883d" config-ref="HTTP_Listener_config" path="/yesterday"/>
+		<ee:transform doc:name="Transform Message" doc:id="9f093800-4d1c-4065-b0d3-0e8749dbec14" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"query": "SELECT checkInTime__c,checkOutTime__c,date__c,employeeId__c,Id,id__c,Name,totalHoursLogged__c FROM attendance__c where date__c ='" ++ ((now() >> "IST")-|P1D|) as String {format: "dd-MMMM-yyyy"} ++ "'"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="a9a020d7-2907-456e-8fe1-b34cfb9af19f" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="daa5db2c-d0f7-4622-89cb-ce7a92c3ee44" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="staticipFlow5" doc:id="0176c1ca-d72f-4492-832e-432afe884e0a" >
+		<http:listener doc:name="Listener" doc:id="8814b2d1-5d5b-4256-aff6-69bc1cf42714" config-ref="HTTP_Listener_config" path="/today"/>
+		<ee:transform doc:name="Transform Message" doc:id="25e28dca-3e78-4772-9e4c-7c1c796f81c0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"query": "SELECT checkInTime__c,checkOutTime__c,date__c,employeeId__c,Id,id__c,Name,totalHoursLogged__c FROM attendance__c where date__c ='" ++ (now() >> "IST") as String {format: "dd-MMMM-yyyy"} ++ "'"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="35625fbf-fbbc-4bca-aece-5399523a0be1" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[#[payload.query]]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="8c23b0e8-f309-458a-ba31-8ccd47f81092" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="staticipFlow6" doc:id="183155e7-fef2-4608-913d-edd4eea9cd48" >
+		<http:listener doc:name="Listener" doc:id="2f7568f1-997a-4186-bc6c-4b345eae8e7e" config-ref="HTTP_Listener_config" path="/regg"/>
+		<foreach doc:name="For Each" doc:id="44089b3a-d535-4864-94e2-46a85bf06ef3" >
+			<ee:transform doc:name="Transform Message" doc:id="85ea43db-c9b1-45ae-82b3-e06bdbd2f3d0">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var a = payload.checkInTime__c
+var b = payload.checkOutTime__c
+var c = abs(a.hour-b.hour)
+var d = abs(a.minutes-b.minutes)
+var e = abs(a.seconds-b.seconds)
+var h = if(c <= 9)
+{
+    "hours": "0" ++ c
+}
+else
+{
+ "hours": c
+}
+var m = if(d <= 9)
+{
+    "minutes": "0" ++ d
+}
+else
+{
+ "minutes": d
+}
+var s = if(e <= 9)
+{
+    "seconds": "0" ++ e
+}
+else
+{
+ "seconds": e
+}
+var z = h.hours ++ ":" ++ m.minutes ++ ":" ++ s.seconds
+---
+{
+	checkInTime__c: payload.checkInTime__c,
+	checkOutTime__c: payload.checkOutTime__c,
+	date__c: payload.date__c,
+	employeeId__c: payload.employeeId__c,
+	Name: payload.Name,
+	totalHoursLogged__c: z,
+	Id: payload.Id
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<set-variable value="#[payload]" doc:name="Set Variable" doc:id="4daf3db0-3034-40f2-8eb1-fa0c9accd592" variableName="actual" />
+			<choice doc:name="Choice" doc:id="cd6a3515-9352-4ab8-a27c-b641f2a83a76" >
+				<when expression='#[payload.totalHoursLogged__c &lt; "09:00:00"]'>
+					<ee:transform doc:name="Transform Message" doc:id="424dc71f-0537-4c1a-9dea-ef3dccd9e559" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"absenties": " This employee " ++ payload.employeeId__c as String ++ ":" ++ vars.actual.Name as String ++ " is not eligible for regularization because total_hours must and should contain 9 hours,so please send the valid check_out Details or check_in Details on " ++ vars.actual.date__c as String
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<set-variable value="#[(vars.absent default []) + payload.absenties]" doc:name="Set Variable" doc:id="dd0ff261-0e6c-4b5d-a1c8-46043857416e" variableName="absent"/>
+				</when>
+				<otherwise >
+					<ee:transform doc:name="Transform Message" doc:id="7cedd3f9-6f3c-40e9-a71c-e1320ddfbb30">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[vars.actual]]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<salesforce:upsert doc:name="Upsert" doc:id="cc984103-8915-406d-a51a-74af60f16dd7" config-ref="Salesforce_Config" objectType="attendance__c" externalIdFieldName="Id" />
+					<ee:transform doc:name="Transform Message" doc:id="7c0e209b-e5b3-45db-8f3c-e9cf3fae67a1">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+					<ee:transform doc:name="Transform Message" doc:id="87e0f86a-b917-4062-8474-5896e3fbed6c" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"present": " This employee " ++ vars.actual.employeeId__c as String ++ ":" ++ vars.actual.Name as String ++ " is eligible for regularization on " ++ vars.actual.date__c as String
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<set-variable value="#[(vars.present default []) + payload.present]" doc:name="Set Variable" doc:id="344d67bc-10ba-4de4-b472-f3eae4e1b54a" variableName="present"/>
+				</otherwise>
+			</choice>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="a984f628-67a0-4132-bb77-3347fd65f14e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"not-regularized": vars.absent,
+	"regularized": vars.present
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<jms:publish doc:name="Publish" doc:id="092e7b84-8000-4d62-88f8-b6d15c95830b" config-ref="JMS_Config" destination='#["regularization-" ++ (now() &gt;&gt; "IST") as String {format: "dd-MMMM-yyyy-HH-mm-ss"}]'>
+			<jms:message outboundContentType="application/json" />
+		</jms:publish>
+	</flow>
+</mule>
